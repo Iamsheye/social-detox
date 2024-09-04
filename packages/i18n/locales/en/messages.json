@@ -1,11 +1,11 @@
 {
   "extensionDescription": {
-    "description": "Extension description",
-    "message": "Chrome extension boilerplate developed with Vite, React and Typescript"
+    "description": "Social Detox",
+    "message": "This extension aims to help users manage and limit their social media usage by tracking time spent on social platforms and providing tools to reduce distractions."
   },
   "extensionName": {
-    "description": "Extension name",
-    "message": "Chrome extension boilerplate"
+    "description": "Social Detox",
+    "message": "Social Detox"
   },
   "toggleTheme": {
     "message": "Toggle theme"
