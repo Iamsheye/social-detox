@@ -3,7 +3,7 @@ import App from '@src/app';
 import tailwindcssOutput from '../dist/tailwind-output.css?inline';
 
 const root = document.createElement('div');
-root.id = 'chrome-extension-boilerplate-react-vite-content-view-root';
+root.id = 'social-detox-content-view-root';
 
 document.body.append(root);
 

@@ -1,11 +1,11 @@
 {
-  "name": "chrome-extension-boilerplate-react-vite",
-  "version": "0.3.1",
-  "description": "chrome extension boilerplate",
+  "name": "social-detox",
+  "version": "1.0.0",
+  "description": "The Social Detox extension aims to help users manage and limit their social media usage by tracking time spent on social platforms and providing tools to reduce distractions.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite.git"
+    "url": "https://github.com/Iamsheye/social-detox.git"
   },
   "scripts": {
     "clean:node_modules": "pnpx rimraf --glob **/node_modules",
