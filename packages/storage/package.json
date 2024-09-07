@@ -17,8 +17,11 @@
     "prettier": "prettier . --write --ignore-path ../../.prettierignore",
     "type-check": "tsc --noEmit"
   },
-  "dependencies": {},
+  "dependencies": {
+    "uuid": "^10.0.0"
+  },
   "devDependencies": {
+    "@types/uuid": "^10.0.0",
     "@extension/tsconfig": "workspace:*"
   }
 }

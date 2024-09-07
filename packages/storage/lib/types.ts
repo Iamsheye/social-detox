@@ -9,11 +9,19 @@ export type BaseStorage<D> = {
   subscribe: (listener: () => void) => () => void;
 };
 
-export type Theme = 'light' | 'dark';
-
-export type ThemeStorage = BaseStorage<Theme> & {
-  toggle: () => Promise<void>;
+export type Site = {
+  id: string;
+  domain: string;
+  totalTime: number;
+  isBlocked: boolean;
+  dailyTime: number;
+  dailyLimit: number | null;
+  isBeingTracked: boolean;
 };
+
+export interface SiteStorage extends BaseStorage<Site[]> {
+  update: (id: string, data: Partial<Site>) => Promise<void>;
+}
 
 export type StorageConfig<D = string> = {
   /**

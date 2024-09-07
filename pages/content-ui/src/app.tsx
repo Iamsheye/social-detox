@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { Button } from '@extension/ui';
 import { useStorage } from '@extension/shared';
-import { exampleThemeStorage } from '@extension/storage';
+import { siteStorage } from '@extension/storage';
 
 export default function App() {
-  const theme = useStorage(exampleThemeStorage);
+  const site = useStorage(siteStorage);
 
   useEffect(() => {
     console.log('content ui loaded');
@@ -15,9 +15,9 @@ export default function App() {
       <div className="flex gap-1 text-blue-500">
         Edit <strong className="text-blue-700">pages/content-ui/src/app.tsx</strong> and save to reload.
       </div>
-      <Button theme={theme} onClick={exampleThemeStorage.toggle}>
-        Toggle Theme
-      </Button>
+      {/* <Button theme={theme} onClick={exampleThemeStorage.toggle}>
+        Unblock
+      </Button> */}
     </div>
   );
 }

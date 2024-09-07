@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@extension/shared": "workspace:*",
+    "@extension/ui": "workspace:*",
     "@extension/storage": "workspace:*",
     "@extension/content-runtime-script": "workspace:*",
     "@types/node": "^20.14.10"

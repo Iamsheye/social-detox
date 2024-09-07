@@ -1,62 +1,63 @@
+import { useState } from 'react';
+import { siteStorage } from '@extension/storage';
+import { useStorage, withErrorBoundary, withSuspense, formatTime } from '@extension/shared';
+import { Settings, Search, Clock, X, Input, Button } from '@extension/ui';
 import '@src/Popup.css';
-import { useStorage, withErrorBoundary, withSuspense } from '@extension/shared';
-import { exampleThemeStorage } from '@extension/storage';
-import type { ComponentPropsWithoutRef } from 'react';
 
 const Popup = () => {
-  const theme = useStorage(exampleThemeStorage);
-  const isLight = theme === 'light';
-  const logo = isLight ? 'popup/logo_vertical.svg' : 'popup/logo_vertical_dark.svg';
+  const [searchTerm, setSearchTerm] = useState('');
+  const domains = useStorage(siteStorage);
 
-  const injectContentScript = async () => {
-    const [tab] = await chrome.tabs.query({ currentWindow: true, active: true });
-
-    await chrome.scripting
-      .executeScript({
-        target: { tabId: tab.id! },
-        files: ['/content-runtime/index.iife.js'],
-      })
-      .catch(err => {
-        if (err.message.includes('Cannot access a chrome:// URL')) {
-          alert('You cannot inject script here!');
-        }
-      });
-  };
+  const filteredDomains = domains.filter(domain => domain.domain.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
-    <div className={`App ${isLight ? 'bg-slate-50' : 'bg-gray-800'}`}>
-      <header className={`App-header ${isLight ? 'text-gray-900' : 'text-gray-100'}`}>
-        <img src={chrome.runtime.getURL(logo)} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>pages/popup/src/Popup.tsx</code>
-        </p>
-        <button
-          className={
-            'font-bold mt-4 py-1 px-4 rounded shadow hover:scale-105 ' +
-            (isLight ? 'bg-blue-200 text-black' : 'bg-gray-700 text-white')
-          }
-          onClick={injectContentScript}>
-          Click to inject Content Script
-        </button>
-        <ToggleButton>Toggle theme</ToggleButton>
-      </header>
+    <div className="w-[300px] h-[400px] overflow-hidden">
+      <div className="p-4 flex flex-col h-full">
+        <h1 className="text-2xl font-bold mb-4 text-center">Social Detox</h1>
+        <div className="flex gap-2 mb-4">
+          <div className="relative flex-grow">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            <Input
+              type="text"
+              placeholder="Search domains"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="pl-8 pr-4 py-2 w-full"
+            />
+          </div>
+          <a href={`chrome-extension://${chrome.runtime.id}/options/index.html`} target="_blank" rel="noreferrer">
+            <Button variant="outline" size="icon">
+              <Settings size={18} />
+            </Button>
+          </a>
+        </div>
+
+        <div className="flex-grow overflow-y-auto">
+          {/* {JSON.stringify(
+            domains.map(({ domain, dailyTime, isBlocked, totalTime }) => ({ domain, dailyTime, isBlocked, totalTime })),
+          )} */}
+          {filteredDomains.map(domain => (
+            <div key={domain.domain} className="flex items-center justify-between py-2 border-b last:border-b-0">
+              <div>
+                <p className="font-medium">{domain.domain}</p>
+                <p className="text-sm text-gray-500 flex items-center">
+                  <Clock size={14} className="mr-1" />
+                  {formatTime(domain.dailyTime)}
+                </p>
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  siteStorage.update(domain.domain, { isBlocked: true });
+                }}>
+                <X size={14} className="mr-1" /> Block
+              </Button>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
-  );
-};
-
-const ToggleButton = (props: ComponentPropsWithoutRef<'button'>) => {
-  const theme = useStorage(exampleThemeStorage);
-  return (
-    <button
-      className={
-        props.className +
-        ' ' +
-        'font-bold mt-4 py-1 px-4 rounded shadow hover:scale-105 ' +
-        (theme === 'light' ? 'bg-white text-black shadow-black' : 'bg-black text-white')
-      }
-      onClick={exampleThemeStorage.toggle}>
-      {props.children}
-    </button>
   );
 };
 
