@@ -1,23 +1,31 @@
-import { useEffect } from 'react';
-import { Button } from '@extension/ui';
 import { useStorage } from '@extension/shared';
 import { siteStorage } from '@extension/storage';
+import { useEffect } from 'react';
 
 export default function App() {
-  const site = useStorage(siteStorage);
+  const sites = useStorage(siteStorage);
+
+  const currentSite = sites.find(site => location.hostname.includes(site.domain));
 
   useEffect(() => {
-    console.log('content ui loaded');
-  }, []);
+    if (currentSite && currentSite.isBlocked) {
+      document.body.style.overflow = 'hidden';
+    }
+  }, [currentSite]);
 
-  return (
-    <div className="flex items-center justify-between gap-2 bg-blue-100 rounded py-1 px-2">
-      <div className="flex gap-1 text-blue-500">
-        Edit <strong className="text-blue-700">pages/content-ui/src/app.tsx</strong> and save to reload.
+  if (!currentSite) return null;
+
+  if (currentSite.isBlocked) {
+    return (
+      <div className="fixed inset-0 bg-red-100 rounded py-1 px-2 w-screen h-screen flex justify-center items-center z-[100000000] overflow-hidden">
+        <div>
+          <div className="flex gap-1 text-red-500 text-3xl">
+            This site is blocked by <strong className="text-red-700">Social Detox</strong>.
+          </div>
+        </div>
       </div>
-      {/* <Button theme={theme} onClick={exampleThemeStorage.toggle}>
-        Unblock
-      </Button> */}
-    </div>
-  );
+    );
+  } else {
+    return null;
+  }
 }

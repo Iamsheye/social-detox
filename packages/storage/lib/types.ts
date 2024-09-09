@@ -12,11 +12,14 @@ export type BaseStorage<D> = {
 export type Site = {
   id: string;
   domain: string;
-  totalTime: number;
   isBlocked: boolean;
   dailyTime: number;
   dailyLimit: number | null;
-  isBeingTracked: boolean;
+  isTrackingAllowed: boolean;
+  dateTracking: {
+    date: string;
+    timeSpent: number;
+  }[];
 };
 
 export interface SiteStorage extends BaseStorage<Site[]> {

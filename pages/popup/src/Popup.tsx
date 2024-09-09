@@ -1,14 +1,45 @@
 import { useState } from 'react';
 import { siteStorage } from '@extension/storage';
 import { useStorage, withErrorBoundary, withSuspense, formatTime } from '@extension/shared';
-import { Settings, Search, Clock, X, Input, Button } from '@extension/ui';
+import {
+  Settings,
+  Search,
+  Clock,
+  Input,
+  Button,
+  EyeOff,
+  Eye,
+  ArrowUpDown,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@extension/ui';
 import '@src/Popup.css';
+
+type SortOptions = 'time' | 'timeReverse' | 'alpha' | 'alphaReverse';
 
 const Popup = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState<SortOptions>('time');
   const domains = useStorage(siteStorage);
 
-  const filteredDomains = domains.filter(domain => domain.domain.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredDomains = domains
+    .filter(domain => domain.domain.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => {
+      if (sortBy === 'time') {
+        return b.dailyTime - a.dailyTime;
+      } else if (sortBy === 'alpha') {
+        return a.domain.localeCompare(b.domain);
+      } else if (sortBy === 'alphaReverse') {
+        return b.domain.localeCompare(a.domain);
+      } else {
+        // 'timeReverse'
+        return a.dailyTime - b.dailyTime;
+      }
+    });
+
+  const activeDropdownClassName = (value: string) => (sortBy === value ? 'bg-slate-500 text-white cursor-pointer' : '');
 
   return (
     <div className="w-[300px] h-[400px] overflow-hidden">
@@ -25,6 +56,31 @@ const Popup = () => {
               className="pl-8 pr-4 py-2 w-full"
             />
           </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="bg-white">
+                <ArrowUpDown size={18} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem className={activeDropdownClassName('time')} onClick={() => setSortBy('time')}>
+                Time (High to Low)
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className={activeDropdownClassName('timeReverse')}
+                onClick={() => setSortBy('timeReverse')}>
+                Time (Low to High)
+              </DropdownMenuItem>
+              <DropdownMenuItem className={activeDropdownClassName('alpha')} onClick={() => setSortBy('alpha')}>
+                A-Z
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className={activeDropdownClassName('alphaReverse')}
+                onClick={() => setSortBy('alphaReverse')}>
+                Z-A
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <a href={`chrome-extension://${chrome.runtime.id}/options/index.html`} target="_blank" rel="noreferrer">
             <Button variant="outline" size="icon">
               <Settings size={18} />
@@ -33,9 +89,6 @@ const Popup = () => {
         </div>
 
         <div className="flex-grow overflow-y-auto">
-          {/* {JSON.stringify(
-            domains.map(({ domain, dailyTime, isBlocked, totalTime }) => ({ domain, dailyTime, isBlocked, totalTime })),
-          )} */}
           {filteredDomains.map(domain => (
             <div key={domain.domain} className="flex items-center justify-between py-2 border-b last:border-b-0">
               <div>
@@ -45,14 +98,30 @@ const Popup = () => {
                   {formatTime(domain.dailyTime)}
                 </p>
               </div>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => {
-                  siteStorage.update(domain.domain, { isBlocked: true });
-                }}>
-                <X size={14} className="mr-1" /> Block
-              </Button>
+
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={async () => {
+                    await siteStorage.update(domain.id, { isTrackingAllowed: domain.isTrackingAllowed ? false : true });
+                  }}
+                  // className="text-white bg-green-500 hover:bg-green-600 flex items-center gap-1"
+                  className={`flex items-center gap-1 ${domain.isTrackingAllowed ? 'bg-gray-300 hover:bg-gray-400 text-gray-700' : 'text-white bg-green-500 hover:bg-green-600'}`}>
+                  {domain.isTrackingAllowed ? <EyeOff size={14} /> : <Eye size={14} />}
+                  <span>{domain.isTrackingAllowed ? 'Off' : 'On'}</span>
+                </Button>
+
+                <Button
+                  variant={domain.isBlocked ? 'secondary' : 'destructive'}
+                  size="sm"
+                  onClick={async () => {
+                    await siteStorage.update(domain.id, { isBlocked: domain.isBlocked ? false : true });
+                  }}
+                  className={domain.isBlocked ? 'bg-gray-300 text-gray-700 hover:bg-gray-400' : ''}>
+                  {domain.isBlocked ? 'Unblock' : 'Block'}
+                </Button>
+              </div>
             </div>
           ))}
         </div>

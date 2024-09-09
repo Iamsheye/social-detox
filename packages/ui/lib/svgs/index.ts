@@ -1,3 +1,3 @@
-import { Search, Settings, Clock, X } from 'lucide-react';
+import { Search, Settings, Clock, ArrowUpDown, EyeOff, Eye } from 'lucide-react';
 
-export { Search, Settings, Clock, X };
+export { Search, Settings, Clock, ArrowUpDown, EyeOff, Eye };
