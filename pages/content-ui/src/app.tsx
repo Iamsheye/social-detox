@@ -10,6 +10,8 @@ export default function App() {
   useEffect(() => {
     if (currentSite && currentSite.isBlocked) {
       document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
     }
   }, [currentSite]);
 
