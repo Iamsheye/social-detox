@@ -12,8 +12,38 @@ const domainTimes: {
   };
 } = {}; // Track time per domain
 
+export async function resetDailyTime() {
+  try {
+    const sites = await siteStorage.get();
+    const updatedSites = sites.map(site => ({
+      ...site,
+      dailyTime: 0,
+    }));
+    await siteStorage.set(updatedSites);
+    console.log('Daily time reset successful');
+  } catch (error) {
+    console.error('Error resetting daily time:', error);
+  }
+}
+
+async function checkAndResetDaily() {
+  try {
+    const lastResetDate = await browser.storage.local.get('lastResetDate');
+    const today = new Date().toISOString().split('T')[0];
+
+    if (!lastResetDate.lastResetDate || lastResetDate.lastResetDate !== today) {
+      await resetDailyTime();
+      await browser.storage.local.set({ lastResetDate: today });
+    }
+  } catch (error) {
+    console.error('Error checking and resetting daily time:', error);
+  }
+}
+
 // Function to update time spent on the current site
 async function updateTimeSpent() {
+  await checkAndResetDaily();
+
   if (currentDomain && startTime) {
     const now = Date.now();
     const timeSpent = Math.floor((now - startTime) / 1000); // Convert to seconds
@@ -52,7 +82,7 @@ async function updateTimeSpent() {
         site.dailyTime += timeSpent;
 
         await siteStorage.update(site.id, site);
-        checkDailyLimit(site.id);
+        await checkDailyLimit(site.id);
       }
     } catch (error) {
       console.error('Error updating time spent:', error);
@@ -146,3 +176,5 @@ const timeInterval = setInterval(updateTimeSpent, 30000);
 browser.runtime.onSuspend.addListener(() => {
   clearInterval(timeInterval);
 });
+
+browser.runtime.onStartup.addListener(checkAndResetDaily);
