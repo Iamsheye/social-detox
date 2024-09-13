@@ -95,7 +95,10 @@ async function checkDailyLimit(siteId: string) {
   try {
     const sites = await siteStorage.get();
     const site = sites.find(site => site.id === siteId);
-    if (site && site.dailyLimit !== null && site.dailyTime >= site.dailyLimit) {
+
+    if (!site) return;
+
+    if (site.dailyLimit !== null && site.dailyTime / 60 >= site.dailyLimit) {
       await siteStorage.update(siteId, { isBlocked: true });
       if (currentTabId) {
         browser.tabs.sendMessage(currentTabId, { action: 'blockSite' });

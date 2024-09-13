@@ -7,8 +7,6 @@ import {
   Clock,
   Input,
   Button,
-  EyeOff,
-  Eye,
   ArrowUpDown,
   DropdownMenu,
   DropdownMenuTrigger,
@@ -99,29 +97,15 @@ const Popup = () => {
                 </p>
               </div>
 
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={async () => {
-                    await siteStorage.update(domain.id, { isTrackingAllowed: domain.isTrackingAllowed ? false : true });
-                  }}
-                  // className="text-white bg-green-500 hover:bg-green-600 flex items-center gap-1"
-                  className={`flex items-center gap-1 ${domain.isTrackingAllowed ? 'bg-gray-300 hover:bg-gray-400 text-gray-700' : 'text-white bg-green-500 hover:bg-green-600'}`}>
-                  {domain.isTrackingAllowed ? <EyeOff size={14} /> : <Eye size={14} />}
-                  <span>{domain.isTrackingAllowed ? 'Off' : 'On'}</span>
-                </Button>
-
-                <Button
-                  variant={domain.isBlocked ? 'secondary' : 'destructive'}
-                  size="sm"
-                  onClick={async () => {
-                    await siteStorage.update(domain.id, { isBlocked: domain.isBlocked ? false : true });
-                  }}
-                  className={domain.isBlocked ? 'bg-gray-300 text-gray-700 hover:bg-gray-400' : ''}>
-                  {domain.isBlocked ? 'Unblock' : 'Block'}
-                </Button>
-              </div>
+              <Button
+                size="sm"
+                variant={domain.isBlocked ? 'secondary' : 'destructive'}
+                onClick={async () => {
+                  await siteStorage.update(domain.id, { isBlocked: domain.isBlocked ? false : true });
+                }}
+                className={domain.isBlocked ? 'bg-gray-300 text-gray-700 hover:bg-gray-400' : ''}>
+                {domain.isBlocked ? 'Unblock' : 'Block'}
+              </Button>
             </div>
           ))}
         </div>
