@@ -29,10 +29,10 @@ export async function resetDailyTime() {
 
 async function checkAndResetDaily() {
   try {
-    const lastResetDate = await browser.storage.local.get('lastResetDate');
-    const today = new Date().toISOString().split('T')[0];
+    const { lastResetDate } = await browser.storage.local.get('lastResetDate');
+    const today = new Date().toLocaleDateString();
 
-    if (!lastResetDate.lastResetDate || lastResetDate.lastResetDate !== today) {
+    if (!lastResetDate || lastResetDate !== today) {
       await resetDailyTime();
       await browser.storage.local.set({ lastResetDate: today });
     }
@@ -41,56 +41,84 @@ async function checkAndResetDaily() {
   }
 }
 
+let isUpdating = false;
+let pendingUpdate: Promise<void> | null = null;
+
 async function updateTimeSpent() {
-  await checkAndResetDaily();
-
-  if (currentDomain && startTime) {
-    const now = Date.now();
-    const timeSpent = Math.floor((now - startTime) / 1000); // Convert to seconds
-
-    if (!domainTimes[currentDomain]) {
-      domainTimes[currentDomain] = { startTime: now, totalTime: 0 };
-    }
-    domainTimes[currentDomain].totalTime += timeSpent; // Accumulate time spent on the domain
-
-    try {
-      const sites = await siteStorage.get();
-      const site = sites.find(site => currentDomain?.includes(site.domain));
-
-      if (!site) return;
-
-      if (!site.isTrackingAllowed) {
-        console.log(`Time tracking disabled for ${currentDomain}`);
-        return;
-      }
-
-      const currentDate = new Date().toISOString().split('T')[0];
-
-      const todayEntry = site.dateTracking.find(entry => entry.date === currentDate);
-
-      if (todayEntry) {
-        todayEntry.timeSpent += timeSpent;
-      } else {
-        site.dateTracking.push({ date: currentDate, timeSpent });
-
-        // Ensure the dateTracking array doesn't exceed 30 elements
-        if (site.dateTracking.length > 30) {
-          site.dateTracking.shift(); // Remove the oldest entry
-        }
-      }
-
-      site.dailyTime += timeSpent;
-
-      await siteStorage.update(site.id, site);
-      console.log(`___${currentDomain}___Time Spent: ${timeSpent} seconds___site.dailyTime: ${site.dailyTime}___`);
-      console.log(`___SITE___`, site);
-      await checkDailyLimit(site.id);
-    } catch (error) {
-      console.error('Error updating time spent:', error);
-    }
+  if (pendingUpdate) {
+    await pendingUpdate;
+    return;
   }
 
-  startTime = Date.now(); // Reset start time for the next tracking period
+  if (isUpdating) {
+    return;
+  }
+
+  isUpdating = true;
+
+  try {
+    await checkAndResetDaily();
+
+    if (currentDomain && startTime) {
+      const now = Date.now();
+      const timeSpent = Math.floor((now - startTime) / 1000); // Convert to seconds
+
+      if (!domainTimes[currentDomain]) {
+        domainTimes[currentDomain] = { startTime: now, totalTime: 0 };
+      }
+      domainTimes[currentDomain].totalTime += timeSpent;
+
+      try {
+        const sites = await siteStorage.get();
+        const site = sites.find(site => currentDomain?.includes(site.domain));
+
+        if (!site) return;
+
+        if (!site.isTrackingAllowed) {
+          console.log(`Time tracking disabled for ${currentDomain}`);
+          return;
+        }
+
+        const currentDate = new Date().toLocaleDateString();
+
+        const todayEntry = site.dateTracking.find(entry => entry.date === currentDate);
+
+        if (todayEntry) {
+          todayEntry.timeSpent += timeSpent;
+        } else {
+          site.dateTracking.push({ date: currentDate, timeSpent });
+
+          // Ensure the dateTracking array doesn't exceed 30 elements
+          if (site.dateTracking.length > 30) {
+            site.dateTracking.shift(); // Remove the oldest entry
+          }
+        }
+
+        site.dailyTime += timeSpent;
+
+        await siteStorage.update(site.id, site);
+        console.log(`___${currentDomain}___Time Spent: ${timeSpent} seconds___site.dailyTime: ${site.dailyTime}___`);
+        console.log(`___SITE___`, site);
+        await checkDailyLimit(site.id);
+      } catch (error) {
+        console.error('Error updating time spent:', error);
+      }
+    }
+
+    startTime = Date.now(); // Reset start time for the next tracking period
+  } finally {
+    // Release the lock and clear pending update
+    isUpdating = false;
+    pendingUpdate = null;
+  }
+}
+
+async function queueUpdateTimeSpent() {
+  if (!pendingUpdate) {
+    // Queue the update
+    pendingUpdate = updateTimeSpent();
+  }
+  return pendingUpdate;
 }
 
 async function checkDailyLimit(siteId: string) {
@@ -111,33 +139,19 @@ async function checkDailyLimit(siteId: string) {
   }
 }
 
-let updateTimeout: ReturnType<typeof setTimeout> | null = null;
-
-async function updateTimeSpentDebounced(): Promise<void> {
-  if (updateTimeout) {
-    clearTimeout(updateTimeout);
-  }
-
-  updateTimeout = setTimeout(async () => {
-    const sites = await siteStorage.get();
-    const site = sites.find(site => currentDomain?.includes(site.domain));
-
-    if (site && site.isTrackingAllowed) {
-      await updateTimeSpent();
-    } else {
-      console.log(`Time tracking disabled for ${currentDomain}`);
-    }
-  }, 500);
-}
-
 async function handleTabChange(tabId: number, url: string | undefined) {
   if (url && url.startsWith('http')) {
     const newDomain = new URL(url).hostname;
+
+    // First, handle time update for the previous domain/tab
+    if (currentDomain) {
+      await queueUpdateTimeSpent();
+    }
+
     const sites = await siteStorage.get();
     const site = sites.find(site => newDomain.includes(site.domain));
 
     if (site && site.isTrackingAllowed) {
-      await updateTimeSpentDebounced();
       currentTabId = tabId;
       currentDomain = newDomain;
       startTime = Date.now();
@@ -163,11 +177,11 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 // Listen for tab close and update the time before the tab is removed
 browser.tabs.onRemoved.addListener(async tabId => {
   if (tabId === currentTabId) {
-    await updateTimeSpentDebounced();
+    await queueUpdateTimeSpent();
   }
 });
 
-const timeInterval = setInterval(updateTimeSpent, 30000);
+const timeInterval = setInterval(queueUpdateTimeSpent, 30000);
 
 browser.runtime.onSuspend.addListener(() => {
   clearInterval(timeInterval);
@@ -185,7 +199,7 @@ browser.windows.onFocusChanged.addListener(async windowId => {
     }
   } else {
     // Window lost focus, update time spent
-    await updateTimeSpentDebounced();
+    await queueUpdateTimeSpent();
   }
 });
 
@@ -200,6 +214,14 @@ browser.idle.onStateChanged.addListener(async newState => {
     }
   } else {
     // Browser became idle or locked, update time spent
-    await updateTimeSpent();
+    await queueUpdateTimeSpent();
   }
 });
+
+// chrome.alarms.create('dailyReset', { periodInMinutes: 24 * 60 });
+
+// chrome.alarms.onAlarm.addListener(alarm => {
+//   if (alarm.name === 'dailyReset') {
+//     resetDailyTime();
+//   }
+// });
