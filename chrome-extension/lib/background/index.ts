@@ -13,6 +13,35 @@ const domainTimes: Record<
   }
 > = {}; // Track time per domain
 
+let timeInterval: NodeJS.Timeout | null = null;
+let isSettingInterval = false;
+
+const startInterval = () => {
+  if (timeInterval) return; // Exit early if interval is already set
+
+  if (isSettingInterval) return; // Exit if we're already in the process of setting the interval
+
+  isSettingInterval = true;
+
+  try {
+    if (!timeInterval) {
+      // Double-check timeInterval is still null
+      timeInterval = setInterval(async () => {
+        await queueUpdateTimeSpent('interval');
+      }, 30000);
+    }
+  } finally {
+    isSettingInterval = false;
+  }
+};
+
+const stopInterval = () => {
+  if (timeInterval) {
+    clearInterval(timeInterval);
+    timeInterval = null;
+  }
+};
+
 export async function resetDailyTime() {
   try {
     const sites = await siteStorage.get();
@@ -21,7 +50,6 @@ export async function resetDailyTime() {
       dailyTime: 0,
     }));
     await siteStorage.set(updatedSites);
-    console.log('Daily time reset successful');
   } catch (error) {
     console.error('Error resetting daily time:', error);
   }
@@ -30,7 +58,7 @@ export async function resetDailyTime() {
 async function checkAndResetDaily() {
   try {
     const { lastResetDate } = await browser.storage.local.get('lastResetDate');
-    const today = new Date().toLocaleDateString();
+    const today = new Date().toISOString().split('T')[0];
 
     if (!lastResetDate || lastResetDate !== today) {
       await resetDailyTime();
@@ -44,7 +72,7 @@ async function checkAndResetDaily() {
 let isUpdating = false;
 let pendingUpdate: Promise<void> | null = null;
 
-async function updateTimeSpent() {
+async function updateTimeSpent(source: string) {
   if (pendingUpdate) {
     await pendingUpdate;
     return;
@@ -79,7 +107,7 @@ async function updateTimeSpent() {
           return;
         }
 
-        const currentDate = new Date().toLocaleDateString();
+        const currentDate = new Date().toISOString().split('T')[0];
 
         const todayEntry = site.dateTracking.find(entry => entry.date === currentDate);
 
@@ -97,8 +125,8 @@ async function updateTimeSpent() {
         site.dailyTime += timeSpent;
 
         await siteStorage.update(site.id, site);
-        console.log(`___${currentDomain}___Time Spent: ${timeSpent} seconds___site.dailyTime: ${site.dailyTime}___`);
-        console.log(`___SITE___`, site);
+        console.log(`___SOURCE: ${source}___`);
+        console.log(`___${currentDomain}___ Time Spent: ${timeSpent} seconds___dailyTime: ${site.dailyTime}___`);
         await checkDailyLimit(site.id);
       } catch (error) {
         console.error('Error updating time spent:', error);
@@ -113,10 +141,10 @@ async function updateTimeSpent() {
   }
 }
 
-async function queueUpdateTimeSpent() {
+async function queueUpdateTimeSpent(source: string) {
   if (!pendingUpdate) {
     // Queue the update
-    pendingUpdate = updateTimeSpent();
+    pendingUpdate = updateTimeSpent(source);
   }
   return pendingUpdate;
 }
@@ -145,7 +173,7 @@ async function handleTabChange(tabId: number, url: string | undefined) {
 
     // First, handle time update for the previous domain/tab
     if (currentDomain) {
-      await queueUpdateTimeSpent();
+      await queueUpdateTimeSpent('handleTabChange');
     }
 
     const sites = await siteStorage.get();
@@ -155,9 +183,19 @@ async function handleTabChange(tabId: number, url: string | undefined) {
       currentTabId = tabId;
       currentDomain = newDomain;
       startTime = Date.now();
+      startInterval();
     } else {
       console.log(`Time tracking disabled for ${newDomain}`);
+      stopInterval();
+      // currentTabId = null;
+      // currentDomain = null;
+      // startTime = null;
     }
+  } else {
+    stopInterval();
+    // currentTabId = null;
+    // currentDomain = null;
+    // startTime = null;
   }
 }
 
@@ -177,14 +215,12 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 // Listen for tab close and update the time before the tab is removed
 browser.tabs.onRemoved.addListener(async tabId => {
   if (tabId === currentTabId) {
-    await queueUpdateTimeSpent();
+    await queueUpdateTimeSpent('onRemoved');
   }
 });
 
-const timeInterval = setInterval(queueUpdateTimeSpent, 30000);
-
 browser.runtime.onSuspend.addListener(() => {
-  clearInterval(timeInterval);
+  stopInterval();
 });
 
 browser.runtime.onStartup.addListener(checkAndResetDaily);
@@ -199,7 +235,8 @@ browser.windows.onFocusChanged.addListener(async windowId => {
     }
   } else {
     // Window lost focus, update time spent
-    await queueUpdateTimeSpent();
+    stopInterval();
+    await queueUpdateTimeSpent('onFocusChanged');
   }
 });
 
@@ -214,7 +251,8 @@ browser.idle.onStateChanged.addListener(async newState => {
     }
   } else {
     // Browser became idle or locked, update time spent
-    await queueUpdateTimeSpent();
+    stopInterval();
+    await queueUpdateTimeSpent('onStateChanged');
   }
 });
 

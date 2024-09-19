@@ -194,7 +194,12 @@ const Options = () => {
                     </div>
                     {domain.dateTracking.map(entry => (
                       <div key={entry.date} className="flex justify-between items-center text-sm">
-                        <span className="text-gray-600">{new Date(entry.date).toDateString()}</span>
+                        <span className="text-gray-600">
+                          {entry.date === new Date().toISOString().split('T')[0]
+                            ? 'Today'
+                            : new Date(entry.date).toDateString()}
+                        </span>
+
                         <span>{formatTime(entry.timeSpent)}</span>
                       </div>
                     ))}
