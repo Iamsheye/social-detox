@@ -10,6 +10,7 @@ export default withUI({
       fontFamily: {
         heading: ['var(--font-heading)', ...fontFamily.sans],
         body: ['var(--font-body)', ...fontFamily.sans],
+        permanent_marker: ['Permanent Marker', ...fontFamily.serif],
       },
       colors: {
         border: 'hsl(var(--border))',

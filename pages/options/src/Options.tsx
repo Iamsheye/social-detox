@@ -72,7 +72,7 @@ const Options = () => {
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       <div className="mb-6 flex items-center justify-center gap-4">
-        <h1 className="text-3xl font-bold text-center">Social Detox Settings</h1>
+        <h1 className="text-3xl font-bold text-center font-permanent_marker">Social Detox Settings</h1>
         <Button variant="outline" size="sm" onClick={exportToCSV} className="flex items-center gap-1.5">
           <Download size={18} />
           <span>Export to CSV</span>

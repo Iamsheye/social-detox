@@ -42,7 +42,7 @@ const Popup = () => {
   return (
     <div className="w-[300px] h-[400px] overflow-hidden">
       <div className="p-4 flex flex-col h-full">
-        <h1 className="text-2xl font-bold mb-4 text-center">Social Detox</h1>
+        <h1 className="text-2xl font-bold mb-4 text-center font-permanent_marker">Social Detox</h1>
         <div className="flex gap-2 mb-4">
           <div className="relative flex-grow">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
