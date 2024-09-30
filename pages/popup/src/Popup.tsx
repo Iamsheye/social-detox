@@ -41,7 +41,7 @@ const Popup = () => {
 
   return (
     <div className="w-[300px] h-[400px] overflow-hidden">
-      <div className="p-4 flex flex-col h-full">
+      <div className="p-4 pb-6 flex flex-col h-full">
         <h1 className="text-2xl font-bold mb-4 text-center font-permanent_marker">Social Detox</h1>
         <div className="flex gap-2 mb-4">
           <div className="relative flex-grow">
@@ -108,6 +108,23 @@ const Popup = () => {
               </Button>
             </div>
           ))}
+        </div>
+
+        <div className="w-full text-xs fixed bottom-0 left-0 py-1.5 bg-[#f9fafb]">
+          <p className="text-center">
+            Created with ❤️ by{' '}
+            <a target="_blank" rel="noreferrer" href="https://github.com/Iamsheye" className="underline font-semibold">
+              Sheye
+            </a>{' '}
+            |{' '}
+            <a
+              rel="noreferrer"
+              target="_blank"
+              href="https://buymeacoffee.com/sheye"
+              className="underline font-semibold">
+              Support me
+            </a>
+          </p>
         </div>
       </div>
     </div>

@@ -210,6 +210,19 @@ const Options = () => {
           </div>
         </CardContent>
       </Card>
+
+      <div className="w-full text-xs fixed bottom-0 left-0 py-1.5 bg-[#f9fafb]">
+        <p className="text-center">
+          Created with ❤️ by{' '}
+          <a target="_blank" rel="noreferrer" href="https://github.com/Iamsheye" className="underline font-semibold">
+            Sheye
+          </a>{' '}
+          |{' '}
+          <a rel="noreferrer" target="_blank" href="https://buymeacoffee.com/sheye" className="underline font-semibold">
+            Support me
+          </a>
+        </p>
+      </div>
     </div>
   );
 };
